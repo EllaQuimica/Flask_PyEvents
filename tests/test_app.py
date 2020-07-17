@@ -1,0 +1,59 @@
+import pytest
+
+from app import app
+from app import get_events
+from app import get_filtered_events
+from app import get_ordered_events
+from arrow.arrow import Arrow
+
+
+@pytest.fixture
+def client():
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
+
+
+@pytest.fixture
+def events():
+    events_test = get_events('./tests/basic_test.ics')
+    return events_test
+
+
+def test_get_events(events):
+    assert len(events) > 0
+    assert type(events) == set
+    assert type(list(events)) == list
+
+
+def test_get_event(events):
+    event = list(events)[0]
+    assert type(event.begin) == Arrow
+    assert type(event.name) == str
+    assert type(event.location) == str
+    assert type(event.description) == str
+
+
+def test_filter_events(events):
+    filtered_events = get_filtered_events(events)
+    assert len(filtered_events) == 3
+    assert list(filtered_events)[0].name == 'PyHEP 2021'
+    assert list(filtered_events)[0].begin.year == 2021
+    assert list(filtered_events)[1].name == 'PyCon JP 2020'
+    assert list(filtered_events)[1].begin.year == 2020
+    assert list(filtered_events)[2].name == 'Better Python Unit Tests'
+    assert list(filtered_events)[2].begin.year == 2020
+
+
+def test_order_events(events):
+    ordered_events = get_ordered_events(events)
+    assert len(ordered_events) == 3
+    assert list(ordered_events)[1].name == 'PyCon JP 2020'
+    assert list(ordered_events)[1].begin.month == 8
+    assert list(ordered_events)[2].name == 'Better Python Unit Tests'
+    assert list(ordered_events)[2].begin.month == 6
+
+# def test_index():
+# render_template = get_ordered_events(events)
+# response = client.get('/')
+# assert response.status_code == 200
